@@ -1,60 +1,98 @@
-// Google Map Api Key
-var googleMapApiKey = "AIzaSyD5WiGW6BKvKHDTK9eGQ-XpGly1xU6MgvA";
-
-//Google map url
-var googleMapsUrl = "https://maps.googleapis.com/maps/api/js?" +
-                 "key="+googleMapApiKey;
-
-$.getScript(googleMapsUrl)
-    // If script loaded successfully calls initializeMap
-    .done(function(){
-      initializeMap();
-    })
-    // If script not loaded calls googleMapError
-    .fail(function(){
-      googleMapError();
-});
-
 var map;
-var mapCanvas = document.getElementById('map');
-var mapOptions = {
-  center: {lat:28.6223126,lng:77.2783315},
-  zoom:12
-};
 
-// initializeMap : function used to initialize the map to the DOM
-function initializeMap(){
-  map = new google.maps.Map(mapCanvas, mapOptions);
-};
+this.marker;
+function initMap(){
+  map = new google.maps.Map(document.getElementById('map'),{
+    center: {lat: 28.60172901103076, lng: 77.22937578649113},
+    zoom: 13
+  });
 
-// googleMapError : function called when map is not loaded
-function googleMapError(){
-  console.log("error");
+  infoWindow = new google.maps.InfoWindow();
+  for(var i=0;i<placesData.length;i++){
+    addMarker(placesData[i]);
+  }
 }
 
+function addMarker(place){
+  var coordinate = {
+    lat: place.location.lat,
+    lng: place.location.lng
+  };
+  self.marker = new google.maps.Marker({
+    map: map,
+    animation: google.maps.Animation.DROP,
+    position: coordinate
+  });
 
-// View model
+  if(self.marker){
+    self.markerArray().push([coordinate, self.marker]);
+    google.maps.event.addListener(marker, 'click', function(){
+      stopAnimation();
+      startAnimation(coordinate);
+      // fourSquareDataDisplay(place);
+    });
+  }
+}
+
+function removeMarker(){
+  for(var i=0; i<self.markerArray().length; i++){
+    self.markerArray()[i][1].setMap(null);
+  }
+}
+
+function showMarker(){
+  for(var i=0; i<self.markerArray().length; i++){
+    self.markerArray()[i][1].setMap(map);
+  }
+}
+
+function startAnimation(coordinate){
+  ko.computed(function(){
+    ko.utils.arrayForEach(self.markerArray(), function(m){
+      if(coordinate.lat === m[0].lat && coordinate.lng === m[0].lng){
+        m[1].setAnimation(google.maps.Animation.BOUNCE);
+      }
+    });
+  });
+}
+
+function stopAnimation(){
+  for(var i=0; i<self.markerArray().length; i++){
+    self.markerArray()[i][1].setAnimation(null);
+  }
+}
+
 var viewModel = function(){
   var self = this;
   this.markerArray = ko.observableArray([]);
   this.searchQuery = ko.observable();
-  this.placeImage = ko.observable();
-  this.placeName = ko.observable();
-  this.address = ko.observable();
+
+  this.place_image = ko.observable();
+  this.place_name = ko.observable();
+
   this.searchResult = ko.computed(function(){
     query = self.searchQuery();
     if(!query){
-      showMarksOnMap();
-      return places;
+      showMarker();
+      return placesData;
+    }else{
+      removeMarker();
+      return ko.utils.arrayFilter(placesData, function(place){
+        if(place.name.toLowerCase().indexOf(query) >= 0){
+          addMarker(place);
+          return place;
+        }
+      });
     }
   });
-};
 
+  this.viewPlaceOnMap = function(place){
+    var coordinate = {lat: place.location.lat, lng: place.location.lng};
+    stopAnimation();
+    startAnimation(coordinate);
+  };
 
+}
 
-
-
-
-
-
+// Applying bindings of view with model
 ko.applyBindings(viewModel);

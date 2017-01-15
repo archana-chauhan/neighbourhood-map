@@ -2,7 +2,7 @@
 var placesData = [
   {
     "name":"Yellow Brick Road",
-    "venuu_id":"4ba1ff66f964a52090d537e3",
+    "venue_id":"4ba1ff66f964a52090d537e3",
     "location":{
       "lat":28.60172901103076,
       "lng":77.22937578649113
@@ -50,7 +50,7 @@ var placesData = [
   },
   {
     "name":"Gulati Restaurant",
-    "venue_id":"4c30890aac0ab71332021c1e"
+    "venue_id":"4c30890aac0ab71332021c1e",
     "location":{
       "lat":28.60798858654076,
       "lng":77.22997643128618
