@@ -1,18 +1,23 @@
 var map;
-
-this.marker;
+// This function is called when the map api loads
 function initMap(){
-  map = new google.maps.Map(document.getElementById('map'),{
+  map = new google.maps.Map(document.getElementById("map"),{
     center: {lat: 28.60172901103076, lng: 77.22937578649113},
     zoom: 13
   });
 
   infoWindow = new google.maps.InfoWindow();
-  for(var i=0;i<placesData.length;i++){
+
+  var bounds = new google.maps.LatLngBounds();
+
+  for(var i=0; i<placesData.length; i++){
     addMarker(placesData[i]);
+    bounds.extend(placesData[i].location);
   }
+  map.fitBounds(bounds);
 }
 
+// This function add marker to the map.
 function addMarker(place){
   var coordinate = {
     lat: place.location.lat,
@@ -26,26 +31,30 @@ function addMarker(place){
 
   if(self.marker){
     self.markerArray().push([coordinate, self.marker]);
-    google.maps.event.addListener(marker, 'click', function(){
+    google.maps.event.addListener(marker, "click", function(){
       stopAnimation();
       startAnimation(coordinate);
-      // fourSquareDataDisplay(place);
+      showFourSquareData(place);
     });
   }
 }
 
+// This function remove all the marker from the map.
 function removeMarker(){
   for(var i=0; i<self.markerArray().length; i++){
     self.markerArray()[i][1].setMap(null);
+
   }
 }
 
+// This fuction show all the makers in the map
 function showMarker(){
   for(var i=0; i<self.markerArray().length; i++){
     self.markerArray()[i][1].setMap(map);
   }
 }
 
+// This function display bounce animation in the marker when the marker is clicked.
 function startAnimation(coordinate){
   ko.computed(function(){
     ko.utils.arrayForEach(self.markerArray(), function(m){
@@ -56,10 +65,51 @@ function startAnimation(coordinate){
   });
 }
 
+// This function stop the animation of all the markers.
 function stopAnimation(){
   for(var i=0; i<self.markerArray().length; i++){
     self.markerArray()[i][1].setAnimation(null);
   }
+}
+
+// This function loads the data from the foursquare api and stores them in knockout variables.
+function showFourSquareData(place){
+  var currentDate = new Date();
+  var day = currentDate.getDate();
+  var month= currentDate.getMonth() + 1;
+  var year = currentDate.getFullYear();
+
+  if(day < 10){
+    day = "0" + day;
+  }
+
+  if(month < 10){
+    month = "0" + month;
+  }
+
+  var today = ""+year+month+day+"";
+  var venue_id = place.venue_id;
+  var url = "https://api.foursquare.com/v2/venues/"+venue_id+"?client_id="+foursquareClientId+"&client_secret="+foursquareClientSecret+"&v="+today+"";
+
+  // Ajax function is called here
+  $.ajax({
+    url: url,
+    dataType: "json",
+    async: true
+  }).success(function(data){
+    // If call is successfull stores data in the variables.
+    self.place_name(data.response.venue.name);
+    self.place_description(data.response.venue.description);
+    self.place_image(data.response.venue.bestPhoto.prefix + "320x200" + data.response.venue.bestPhoto.suffix);
+    self.place_rating("Rating : " + data.response.venue.rating);
+    if(data.reponse.venue.contact.phone != undefined || data.reponse.venue.contact.phone != null){
+        self.place_contact("Contact number : "+data.response.venue.contact.phone);
+    }
+  }).error(function(data){
+    // If call is unsuccessfull this function is called.
+    fourSquareApiLoadError();
+  })
+
 }
 
 var viewModel = function(){
@@ -69,6 +119,12 @@ var viewModel = function(){
 
   this.place_image = ko.observable();
   this.place_name = ko.observable();
+  this.place_contact = ko.observable();
+  this.place_description = ko.observable();
+  this.place_rating = ko.observable();
+
+  this.apiError = ko.observable(false);
+  this.error_message = ko.observable();
 
   this.searchResult = ko.computed(function(){
     query = self.searchQuery();
@@ -90,8 +146,21 @@ var viewModel = function(){
     var coordinate = {lat: place.location.lat, lng: place.location.lng};
     stopAnimation();
     startAnimation(coordinate);
+    showFourSquareData(place);
   };
 
+}
+
+// This function is called when there is an error in loading the map.
+function googleMapLoadError(){
+  self.error_message("Error : Not able to load Google map !!");
+  self.apiError(true);
+}
+
+// This function is called when there is an error while loading data from four square api.
+function fourSquareApiLoadError(){
+  self.error_message("Error : Not able to load Foursquare API !!");
+  self.apiError(true);
 }
 
 // Applying bindings of view with model
