@@ -102,7 +102,7 @@ function showFourSquareData(place){
     self.place_description(data.response.venue.description);
     self.place_image(data.response.venue.bestPhoto.prefix + "320x200" + data.response.venue.bestPhoto.suffix);
     self.place_rating("Rating : " + data.response.venue.rating);
-    if(data.reponse.venue.contact.phone != undefined || data.reponse.venue.contact.phone != null){
+    if(data.response.venue.contact.phone != undefined || data.response.venue.contact.phone != null){
         self.place_contact("Contact number : "+data.response.venue.contact.phone);
     }
   }).error(function(data){
